@@ -14,7 +14,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import BusinessHoursSection from '@/components/services/BusinessHoursSection';
 import StaffHoursModal from '@/components/services/StaffHoursModal';
 import { collection, query, where, onSnapshot, doc, getDocs } from 'firebase/firestore';
-import { deleteDoc, getDoc, writeBatch } from 'firebase/firestore';
+import {writeBatch } from 'firebase/firestore';
 
 export default function ServicesPage() {
   const { userData } = useAuth();

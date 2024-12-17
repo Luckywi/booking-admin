@@ -1,13 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import '@/styles/calendar-custom.css';
-import { format } from 'date-fns';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import fr from 'date-fns/locale/fr';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import AppointmentModal from '@/components/appointments/AppointmentModal';
 import StaffSelector from '@/components/appointments/StaffSelector';
@@ -17,7 +14,6 @@ import type { Appointment } from '@/types/appointment';
 import type { BusinessHours } from '@/types/business';
 import type { Staff } from '@/types/staff';
 import { collection, query, where, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
-import StaffColorPicker from '@/components/staff/StaffColorPicker';
 import AppointmentDetailsModal from '@/components/appointments/AppointmentDetailsModal';
 
 const localizer = dateFnsLocalizer({
@@ -35,22 +31,22 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState('week');
+  const [view, setView] = useState<View>('week');
   const [businessHours, setBusinessHours] = useState<BusinessHours['hours'] | null>(null);
   const [staffHours, setStaffHours] = useState<BusinessHours['hours'] | null>(null);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [staffMembers, setStaffMembers] = useState<Record<string, Staff>>({});
-  const Event = ({ event }: { event: any }) => { return null; };
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-
+  // Composant personnalisé pour l'affichage des événements
+  const Event = () => null;
 
   useEffect(() => {
     if (!userData?.businessId) return;
 
     const fetchBusinessHours = async () => {
-      const docRef = doc(db, 'businessHours', userData.businessId);
+      const docRef = doc(collection(db, 'businessHours'), userData.businessId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setBusinessHours(docSnap.data().hours);
@@ -67,7 +63,7 @@ export default function AppointmentsPage() {
     }
 
     const fetchStaffHours = async () => {
-      const docRef = doc(db, 'staffHours', selectedStaffId);
+      const docRef = doc(collection(db, 'staffHours'), selectedStaffId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setStaffHours(docSnap.data().hours);
@@ -77,7 +73,6 @@ export default function AppointmentsPage() {
     fetchStaffHours();
   }, [selectedStaffId]);
 
-  // Puis modifiez le useEffect pour la récupération des collaborateurs
   useEffect(() => {
     if (!userData?.businessId) return;
 
@@ -106,7 +101,6 @@ export default function AppointmentsPage() {
 
     fetchStaffMembers();
   }, [userData?.businessId]);
-
 
   useEffect(() => {
     if (!userData?.businessId) return;
@@ -147,8 +141,6 @@ export default function AppointmentsPage() {
       setAppointments(appointmentsData);
     });
 
-
-
     return () => unsubscribe();
   }, [userData?.businessId, selectedStaffId]);
 
@@ -157,7 +149,6 @@ export default function AppointmentsPage() {
     const dayName = days[start.getDay()];
     const timeString = format(start, 'HH:mm');
 
-    // Vérifier d'abord les horaires du business
     if (businessHours) {
       const businessDay = businessHours[dayName as keyof BusinessHours['hours']];
       if (!businessDay.isOpen) return false;
@@ -166,7 +157,6 @@ export default function AppointmentsPage() {
       if (timeString < businessOpen || timeString > businessClose) return false;
     }
 
-    // Si un collaborateur est sélectionné, vérifier ses horaires spécifiques
     if (selectedStaffId && staffHours) {
       const staffDay = staffHours[dayName as keyof BusinessHours['hours']];
       if (!staffDay.isOpen) return false;
@@ -211,7 +201,6 @@ export default function AppointmentsPage() {
     const dayName = days[date.getDay()];
     const timeString = format(date, 'HH:mm');
 
-    // Vérifier les horaires du business d'abord
     if (businessHours) {
       const businessDay = businessHours[dayName as keyof BusinessHours['hours']];
       if (!businessDay.isOpen ||
@@ -219,14 +208,13 @@ export default function AppointmentsPage() {
         timeString > businessDay.closeTime!) {
         return {
           style: {
-            backgroundColor: '#f3f4f6', // Gris clair pour business fermé
+            backgroundColor: '#f3f4f6',
             cursor: 'not-allowed'
           }
         };
       }
     }
 
-    // Si un collaborateur est sélectionné, vérifier ses horaires
     if (selectedStaffId && staffHours) {
       const staffDay = staffHours[dayName as keyof BusinessHours['hours']];
       if (!staffDay.isOpen ||
@@ -234,7 +222,7 @@ export default function AppointmentsPage() {
         timeString > staffDay.closeTime!) {
         return {
           style: {
-            backgroundColor: '#FEE2E2', // Rouge très clair pour staff indisponible
+            backgroundColor: '#FEE2E2',
             cursor: 'not-allowed'
           }
         };
@@ -244,16 +232,15 @@ export default function AppointmentsPage() {
     return {};
   };
 
-
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);
   };
 
-  const handleViewChange = (newView: string) => {
+  const handleViewChange = (newView: View) => {
     setView(newView);
   };
 
-  const handleSelectSlot = ({ start, end }: { start: Date; end: Date }) => {
+  const handleSelectSlot = ({ start }: { start: Date }) => {
     if (isSlotAvailable(start)) {
       setIsModalOpen(true);
     } else {
@@ -263,7 +250,7 @@ export default function AppointmentsPage() {
 
   const eventPropGetter = (event: Appointment) => {
     const staff = staffMembers[event.staffId];
-    const color = staff?.color || '#3174ad'; // Couleur par défaut
+    const color = staff?.color || '#3174ad';
 
     return {
       style: {
@@ -272,7 +259,6 @@ export default function AppointmentsPage() {
       }
     };
   };
-
 
   const handleSelectEvent = (event: Appointment) => {
     setSelectedAppointmentId(event.id);
@@ -311,7 +297,6 @@ export default function AppointmentsPage() {
         }}
       />
 
-
       <div className="bg-white rounded-lg shadow p-6" style={{ height: 'calc(100vh - 200px)' }}>
         <Calendar
           localizer={localizer}
@@ -325,8 +310,8 @@ export default function AppointmentsPage() {
           onView={handleViewChange}
           onSelectSlot={handleSelectSlot}
           eventPropGetter={eventPropGetter}
-          step={30}  // Intervalle en minutes
-          dayLayoutAlgorithm={'no-overlap'}  // Algorithme pour éviter le chevauchement
+          step={30}
+          dayLayoutAlgorithm={'no-overlap'}
           onSelectEvent={handleSelectEvent}
           components={{
             event: Event
@@ -356,18 +341,13 @@ export default function AppointmentsPage() {
         />
       </div>
 
-
-
       <AppointmentModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSuccess={() => {
           setIsModalOpen(false);
         }}
-        selectedStaffId={selectedStaffId}
       />
     </div>
-
-
   );
 }

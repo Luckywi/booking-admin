@@ -11,7 +11,6 @@ import type { Staff } from '@/types/staff';
 import type { Service, ServiceCategory } from '@/types/service';
 import type { BusinessHours } from '@/types/business';
 import DatePicker from '@/components/appointments/DatePicker'; // Assurez-vous que le chemin est correct
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { fr } from 'date-fns/locale';
 
 interface AppointmentModalProps {

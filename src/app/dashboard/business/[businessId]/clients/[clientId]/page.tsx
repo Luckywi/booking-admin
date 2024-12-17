@@ -51,7 +51,7 @@ export default function ClientDetailsPage() {
         }
 
         let totalSpent = 0;
-        const appointments = [];
+        const appointments: Array<Appointment & { serviceName?: string; servicePrice?: number }> = [];
 
         // Récupérer les détails des services pour chaque rendez-vous
         for (const docRef of appointmentsSnapshot.docs) {
@@ -71,9 +71,17 @@ export default function ClientDetailsPage() {
 
           appointments.push({
             id: docRef.id,
-            ...appointmentData,
+            staffId: appointmentData.staffId,
+            businessId: appointmentData.businessId,
+            title: appointmentData.title,
+            clientName: appointmentData.clientName,
+            clientEmail: appointmentData.clientEmail,
+            clientPhone: appointmentData.clientPhone,
             start: appointmentData.start.toDate(),
             end: appointmentData.end.toDate(),
+            status: appointmentData.status,
+            notes: appointmentData.notes,
+            serviceId: appointmentData.serviceId,
             createdAt: appointmentData.createdAt?.toDate() || new Date(),
             serviceName,
             servicePrice
@@ -104,7 +112,8 @@ export default function ClientDetailsPage() {
     fetchClientDetails();
   }, [businessId, clientId]);
 
-  if (!businessId) {
+  // Vérification de sécurité utilisant userData implicitement via businessId
+  if (!businessId || businessId !== userData?.businessId) {
     return <div className="p-6">Accès non autorisé</div>;
   }
 

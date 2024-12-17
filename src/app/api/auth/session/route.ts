@@ -1,5 +1,4 @@
 import { auth } from 'firebase-admin';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { initAdmin } from '@/lib/firebase/admin';
 
@@ -26,6 +25,7 @@ export async function POST(request: Request) {
 
     return response;
   } catch (error) {
+    console.error('Session creation error:', error);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }

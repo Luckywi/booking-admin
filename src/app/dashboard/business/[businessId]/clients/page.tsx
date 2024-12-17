@@ -20,10 +20,15 @@ interface Client {
   averageSpent: number;
 }
 
+interface AppointmentData extends Omit<Appointment, 'start' | 'end' | 'createdAt' | 'id'> {
+  start: { toDate: () => Date };
+  end: { toDate: () => Date };
+  createdAt?: { toDate: () => Date };
+}
+
 export default function ClientsPage() {
   const router = useRouter();
   const params = useParams();
-  const { userData } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,13 +47,16 @@ export default function ClientsPage() {
         );
 
         const appointmentsSnapshot = await getDocs(appointmentsQuery);
-        const appointmentsData = appointmentsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          start: doc.data().start.toDate(),
-          end: doc.data().end.toDate(),
-          createdAt: doc.data().createdAt?.toDate() || new Date()
-        }));
+        const appointmentsData = appointmentsSnapshot.docs.map(doc => {
+          const data = doc.data() as AppointmentData;
+          return {
+            id: doc.id,
+            ...data,
+            start: data.start.toDate(),
+            end: data.end.toDate(),
+            createdAt: data.createdAt?.toDate() || new Date()
+          } as Appointment;
+        });
 
         // Grouper les rendez-vous par client
         const clientsMap = new Map<string, Client>();
